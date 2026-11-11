@@ -7,5 +7,5 @@ export default defineConfig({
     tailwindcss(),
     react()
   ],
-  base: '/diet-control-front/'
+  base: '/Diet-Control/'
 })
