@@ -1,4 +1,12 @@
-import { Calendar, ChevronDown } from "lucide-react";
+import {
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Coffee,
+  Utensils,
+  Apple,
+  ConciergeBell,
+} from "lucide-react";
 import { useState, useRef } from "react";
 import ListaVazia from "./components/ListaVazia";
 import Header from "./components/Header";
@@ -38,6 +46,7 @@ function App() {
   const [peso, setPeso] = useState("");
   const [categoria, setCategoria] = useState("cafe_da_manha");
   const [calorias, setCalorias] = useState("");
+  const [abaAtiva, setAbaAtiva] = useState("busca")
 
   // --- ESTADOS DA INTERFACE ---
   const [modal, setModal] = useState(false);
@@ -46,7 +55,7 @@ function App() {
 
   // --- ESTADOS DE DADOS ---
   const [refeicoes, setRefeicoes] = useState(
-    JSON.parse(localStorage.getItem("refeicoes")) || []
+    JSON.parse(localStorage.getItem("refeicoes")) || [],
   );
 
   const dataHoje = new Date().toISOString().split("T")[0];
@@ -54,11 +63,11 @@ function App() {
 
   // --- LÓGICA DE FILTRAGEM ---
   const refeicoesDoDia = refeicoes.filter(
-    (refeicao) => refeicao.data == dataSelecionada
+    (refeicao) => refeicao.data == dataSelecionada,
   );
 
   const refeicoesSelecionadas = refeicoesDoDia.filter(
-    (refeicao) => refeicao.categoria === selectCard
+    (refeicao) => refeicao.categoria === selectCard,
   );
 
   const totalCalorias = refeicoesDoDia.reduce((acumulador, refeicao) => {
@@ -82,6 +91,13 @@ function App() {
 
   const listaCategorias = ["cafe_da_manha", "almoco", "lanche", "janta"];
 
+  const iconesCategoria = {
+    cafe_da_manha: <Coffee className="text-[#5DD62C]" size={20} />,
+    almoco: <Utensils className="text-[#5DD62C]" size={20} />,
+    lanche: <Apple className="text-[#5DD62C]" size={20} />,
+    janta: <ConciergeBell className="text-[#5DD62C]" size={20} />,
+  };
+
   // --- FUNÇÕES AUXILIARES ---
   const formatarData = (dataSelecionada) => {
     const dataObj = new Date(dataSelecionada + "T12:00:00");
@@ -91,7 +107,9 @@ function App() {
       year: "numeric",
     });
 
-    return dataSelecionada === dataHoje ? "Hoje, " + dataFormatada : dataFormatada;
+    return dataSelecionada === dataHoje
+      ? "Hoje, " + dataFormatada
+      : dataFormatada;
   };
 
   return (
@@ -125,16 +143,56 @@ function App() {
 
           <main className="p-4 bg-[#0F0F0F] border-x border-b border-[#202020] rounded-b-lg">
             {/* Cards de Refeições com .map() */}
-            <div className="flex gap-4 mb-6">
-              {listaCategorias.map((categoriaItem) => (
-                <div
-                  key={categoriaItem}
-                  onClick={() => setSelectCard(categoriaItem)}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all bg-[#202020] text-[#5DD62C] ${selectCard === categoriaItem ? "border-[#337418]" : "border-transparent"}`}
-                >
-                  {nomesCategoria[categoriaItem]}
-                </div>
-              ))}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {listaCategorias.map((categoriaItem) => {
+
+                // Filtro de Itens e Contagem de calorias
+                const refeicoesDaCategoria = refeicoesDoDia.filter(
+                  (refeicao) => refeicao.categoria === categoriaItem,
+                );
+                const caloriasDaCategoria = refeicoesDaCategoria.reduce(
+                  (acumulador, refeicao) => {
+                    return acumulador + Number(refeicao.calorias || 0);
+                  },
+                  0,
+                );
+
+                return (
+                  <div
+                    key={categoriaItem}
+                    onClick={() =>
+                      setSelectCard(
+                        selectCard === categoriaItem ? null : categoriaItem,
+                      )
+                    }
+                    className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all bg-[#202020] ${selectCard === categoriaItem ? "border-[#5DD62C]" : "border-transparent"}`}
+                  >
+                    <div className="flex flex-col gap-1">
+                      {iconesCategoria[categoriaItem]}
+                      <span className="font-semibold text-[#F8F8F8] mt-1">
+                        {nomesCategoria[categoriaItem]}
+                      </span>
+                      <span className="text-sm text-[#F8F8F8]">
+                        {refeicoesDaCategoria.length > 0
+                          ? `${caloriasDaCategoria} kcal`
+                          : "-"}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {refeicoesDaCategoria.length > 0
+                          ? refeicoesDaCategoria.length === 1 
+                            ? "1 item" 
+                            : `${refeicoesDaCategoria.length} itens`
+                          : "Sem registros"}
+                      </span>
+                    </div>
+
+                    <ChevronRight
+                      size={20}
+                      className={`text-gray-400 transition-transform ${selectCard === categoriaItem ? "rotate-90" : ""}`}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
             {/* Renderização Condicional da Lista e Botão */}
@@ -178,12 +236,11 @@ function App() {
               X
             </button>
 
-            <h2 className="text-xl font-bold mb-4 text-[#F8F8F8]">Registrar Alimento</h2>
+            <h2 className="text-xl font-bold mb-4 text-[#F8F8F8]">
+              Registrar Alimento
+            </h2>
 
-            <form
-              onSubmit={adicionarRefeicao}
-              className="flex flex-col gap-3"
-            >
+            <form onSubmit={adicionarRefeicao} className="flex flex-col gap-3">
               <input
                 type="text"
                 value={name}
