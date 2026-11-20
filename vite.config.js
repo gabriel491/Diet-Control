@@ -1,3 +1,4 @@
+import process from 'node:process'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -7,5 +8,5 @@ export default defineConfig({
     tailwindcss(),
     react()
   ],
-  base: '/Diet-Control/'
+  base: process.env.VERCEL ? "/" : "/Diet-Control/"
 })
