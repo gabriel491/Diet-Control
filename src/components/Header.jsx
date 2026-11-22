@@ -1,19 +1,17 @@
-import { Salad } from "lucide-react";
 
-function Header({ totalCalorias }) {
+function Header() {
   return (
-    <header className="bg-[#202020] p-4 shadow-md rounded-t-lg border-b border-[#337418]">
-      <h1 className="text-2xl font-bold text-center flex items-center justify-center gap-2">
-        Meu Diário de Alimentação <Salad className="text-[#5DD62C]" />
+<header className="flex items-center justify-center gap-3 py-6 px-4 bg-[#0F0F0F] border border-[#202020] rounded-t-lg">
+      <img
+        src={`${import.meta.env.BASE_URL}favicon.ico`}
+        alt="Logo Diet Control"
+        width={32}
+        height={32}
+        className="w-8 h-8 object-contain"
+      />
+      <h1 className="text-2xl font-bold tracking-tight text-[#F8F8F8]">
+        Diet <span className="text-[#5DD62C]">Control</span>
       </h1>
-
-      {/* CORREÇÃO DA EXIBIÇÃO: Estilizado com as cores do seu tema */}
-      <p className="text-center mt-2 text-gray-400 font-medium">
-        Calorias Consumidas:{" "}
-        <span className="text-[#5DD62C] text-xl font-bold">
-          {totalCalorias} kcal
-        </span>
-      </p>
     </header>
   );
 }

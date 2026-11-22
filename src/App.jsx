@@ -4,17 +4,24 @@ import Header from "./components/Header";
 import ModalRefeicao from "./components/ModalRefeicao";
 import SeletorData from "./components/SeletorData";
 import CardsCategorias from "./components/CardsCategorias";
+import ResumoDiario from "./components/ResumoDiario";
+import ModalMeta from "./components/ModalMeta";
 import { coresCategoria, nomesCategoria } from "./constants/categorias";
 
 function App() {
   // --- ESTADOS DA INTERFACE ---
   const [modal, setModal] = useState(false);
+  const [modalMeta, setModalMeta] = useState(false);
   const [selectCard, setSelectCard] = useState(null);
 
   // --- ESTADOS DE DADOS ---
   const [refeicoes, setRefeicoes] = useState(
     JSON.parse(localStorage.getItem("refeicoes")) || [],
   );
+  const [metaCalorias, setMetaCalorias] = useState(() => {
+    const metaSalva = localStorage.getItem("metaCalorias");
+    return metaSalva ? Number(metaSalva) : null;
+  });
 
   const dataHoje = new Date().toISOString().split("T")[0];
   const [dataSelecionada, setDataSelecionada] = useState(dataHoje);
@@ -32,6 +39,17 @@ function App() {
     return acumulador + Number(refeicao.calorias || 0);
   }, 0);
 
+  // Soma segura dos macronutrientes do dia
+  const macrosDoDia = refeicoesDoDia.reduce(
+    (acc, refeicao) => ({
+      proteinas: acc.proteinas + Number(refeicao.proteinas || 0),
+      carboidratos: acc.carboidratos + Number(refeicao.carboidratos || 0),
+      gorduras: acc.gorduras + Number(refeicao.gorduras || 0),
+      fibras: acc.fibras + Number(refeicao.fibras || 0),
+    }),
+    { proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 },
+  );
+
   // --- FUNÇÕES DE AÇÃO ---
   const registrarRefeicao = (dadosRefeicao) => {
     const novaRefeicao = {
@@ -45,6 +63,11 @@ function App() {
     localStorage.setItem("refeicoes", JSON.stringify(listaRefeicoes));
     setModal(false);
   };
+  const salvarMeta = (novaMeta) => {
+    setMetaCalorias(novaMeta);
+    localStorage.setItem("metaCalorias", String(novaMeta));
+    setModalMeta(false);
+  };
 
   const deletarRefeicao = (id) => {
     const listaAtualizada = refeicoes.filter((refeicao) => refeicao.id != id);
@@ -55,9 +78,9 @@ function App() {
   return (
     <>
       {/* --- TELA PRINCIPAL --- */}
-      <div className="bg-[#0F0F0F] min-h-screen p-5 text-[#F8F8F8]">
+      <div className="bg-[#0F0F0F] min-h-screen px-3 py-4 sm:p-5 text-[#F8F8F8]">
         <div className="max-w-lg mx-auto">
-          <Header totalCalorias={totalCalorias} />
+          <Header />
 
           {/* Calendário */}
           <SeletorData
@@ -66,7 +89,14 @@ function App() {
             setDataSelecionada={setDataSelecionada}
           />
 
-          <main className="p-4 bg-[#0F0F0F] border-x border-b border-[#202020] rounded-b-lg">
+          <ResumoDiario
+            totalCalorias={totalCalorias}
+            metaCalorias={metaCalorias}
+            macros={macrosDoDia}
+            onAbrirModalMeta={() => setModalMeta(true)}
+          />
+
+          <main className="p-3 sm:p-4 bg-[#0F0F0F] border border-[#202020] rounded-2xl">
             {/* Cards de Refeições */}
 
             <CardsCategorias
@@ -102,6 +132,13 @@ function App() {
           onClose={() => setModal(false)}
           onSalvarRefeicao={registrarRefeicao}
           categoriaSelecionada={selectCard}
+        />
+      )}
+      {modalMeta && (
+        <ModalMeta
+          metaAtual={metaCalorias}
+          onClose={() => setModalMeta(false)}
+          onSalvarMeta={salvarMeta}
         />
       )}
     </>

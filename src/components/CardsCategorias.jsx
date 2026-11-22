@@ -7,7 +7,7 @@ import {
 
 function CardsCategorias({ refeicoesDoDia, selectCard, setSelectCard }) {
   return (
-    <div className="grid grid-cols-2 gap-4 mb-6">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
       {listaCategorias.map((categoriaItem) => {
         const refeicoesDaCategoria = refeicoesDoDia.filter(
           (refeicao) => refeicao.categoria === categoriaItem,
@@ -25,18 +25,29 @@ function CardsCategorias({ refeicoesDoDia, selectCard, setSelectCard }) {
             onClick={() =>
               setSelectCard(selectCard === categoriaItem ? null : categoriaItem)
             }
-            className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all bg-[#202020] ${
+            className={`flex flex-col justify-between p-3.5 sm:p-4 rounded-xl border-2 cursor-pointer transition-all bg-[#202020] ${
               selectCard === categoriaItem
                 ? "border-[#5DD62C]"
                 : "border-transparent"
             }`}
           >
-            <div className="flex flex-col gap-1">
+            {/* Topo: Ícone à esquerda e Seta à direita */}
+            <div className="flex items-center justify-between mb-2.5">
               {iconesCategoria[categoriaItem]}
-              <span className="font-semibold text-[#F8F8F8] mt-1">
+              <ChevronRight
+                size={18}
+                className={`text-gray-400 transition-transform ${
+                  selectCard === categoriaItem ? "rotate-90" : ""
+                }`}
+              />
+            </div>
+
+            {/* Base: Textos usando toda a largura do card */}
+            <div className="flex flex-col gap-0.5">
+              <span className="font-semibold text-sm sm:text-base text-[#F8F8F8] leading-tight">
                 {nomesCategoria[categoriaItem]}
               </span>
-              <span className="text-sm text-[#F8F8F8]">
+              <span className="text-sm text-[#F8F8F8] mt-1">
                 {refeicoesDaCategoria.length > 0
                   ? `${caloriasDaCategoria} kcal`
                   : "-"}
@@ -49,13 +60,6 @@ function CardsCategorias({ refeicoesDoDia, selectCard, setSelectCard }) {
                   : "Sem registros"}
               </span>
             </div>
-
-            <ChevronRight
-              size={20}
-              className={`text-gray-400 transition-transform ${
-                selectCard === categoriaItem ? "rotate-90" : ""
-              }`}
-            />
           </div>
         );
       })}

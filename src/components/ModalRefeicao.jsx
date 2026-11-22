@@ -10,11 +10,18 @@ const normalizarTexto = (texto) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+const calcularProporcao = (valor100g, gramas) =>
+  Number((((Number(valor100g) || 0) * (Number(gramas) || 0)) / 100).toFixed(1));
+
 function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
   // --- ESTADOS DO FORMULÁRIO MANUAL ---
   const [name, setName] = useState("");
   const [peso, setPeso] = useState("");
   const [calorias, setCalorias] = useState("");
+  const [proteinas, setProteinas] = useState("");
+  const [carboidratos, setCarboidratos] = useState("");
+  const [gorduras, setGorduras] = useState("");
+  const [fibras, setFibras] = useState("");
   const [categoria, setCategoria] = useState(
     categoriaSelecionada || "cafe_da_manha",
   );
@@ -31,6 +38,24 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
   const caloriasEstimadas = alimentoSelecionado
     ? Math.round((alimentoSelecionado.calorias100g * quantidade) / 100)
     : 0;
+
+  const macrosEstimados = alimentoSelecionado
+    ? {
+        proteinas: calcularProporcao(
+          alimentoSelecionado.proteina100g,
+          quantidade,
+        ),
+        carboidratos: calcularProporcao(
+          alimentoSelecionado.carboidrato100g,
+          quantidade,
+        ),
+        gorduras: calcularProporcao(
+          alimentoSelecionado.gordura100g,
+          quantidade,
+        ),
+        fibras: calcularProporcao(alimentoSelecionado.fibra100g, quantidade),
+      }
+    : { proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 };
 
   // --- BUSCA HÍBRIDA (TACO + OPEN FOOD FACTS) ---
   const buscarAlimentos = async () => {
@@ -57,7 +82,7 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
       return;
     }
 
-    // 2. Fallback: busca na API
+    // 2. Fallback: busca na API Open Food Facts
     const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
       termoLimpo,
     )}&search_simple=1&action=process&json=1&page_size=10&fields=code,product_name,nutriments`;
@@ -79,6 +104,10 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
           id: produto.code || `api-${index}`,
           nome: produto.product_name,
           calorias100g: Math.round(produto.nutriments["energy-kcal_100g"]),
+          proteina100g: Number(produto.nutriments.proteins_100g || 0),
+          carboidrato100g: Number(produto.nutriments.carbohydrates_100g || 0),
+          gordura100g: Number(produto.nutriments.fat_100g || 0),
+          fibra100g: Number(produto.nutriments.fiber_100g || 0),
         }));
 
       if (resultadosApi.length === 0) {
@@ -86,7 +115,7 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
       }
 
       setResultadosBusca(resultadosApi);
-    } catch (erro) {
+    } catch {
       setErroBusca("Não foi possível buscar os alimentos. Tente novamente.");
       setResultadosBusca([]);
     } finally {
@@ -101,6 +130,10 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
       nome: name,
       peso: Number(peso),
       calorias: Number(calorias),
+      proteinas: Number(proteinas) || 0,
+      carboidratos: Number(carboidratos) || 0,
+      gorduras: Number(gorduras) || 0,
+      fibras: Number(fibras) || 0,
       categoria,
     });
   };
@@ -114,6 +147,10 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
       nome: alimentoSelecionado.nome,
       peso: quantidade,
       calorias: caloriasEstimadas,
+      proteinas: macrosEstimados.proteinas,
+      carboidratos: macrosEstimados.carboidratos,
+      gorduras: macrosEstimados.gorduras,
+      fibras: macrosEstimados.fibras,
       categoria: categoriaSelecionada || "cafe_da_manha",
     });
   };
@@ -121,15 +158,16 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
   return (
     <div
       onClick={onClose}
-      className="modal fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+      className="modal fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-[#0F0F0F] text-[#F8F8F8] p-6 rounded-2xl w-full max-w-sm relative"
+        className="bg-[#0F0F0F] border border-[#262626] text-[#F8F8F8] p-6 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto relative"
       >
         <button
           type="button"
           onClick={onClose}
+          aria-label="Fechar modal"
           className="absolute top-4 right-4 text-gray-400 hover:text-white font-bold cursor-pointer"
         >
           X
@@ -211,6 +249,10 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
                         setAlimentoSelecionado({
                           nome: produto.nome,
                           calorias100g: produto.calorias100g,
+                          proteina100g: produto.proteina100g || 0,
+                          carboidrato100g: produto.carboidrato100g || 0,
+                          gordura100g: produto.gordura100g || 0,
+                          fibra100g: produto.fibra100g || 0,
                         });
                         setResultadosBusca([]);
                       }}
@@ -229,14 +271,43 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
             )}
 
             {alimentoSelecionado && (
-              <div className="bg-[#202020] p-3 rounded-xl border border-[#5DD62C]">
-                <p className="font-semibold text-[#F8F8F8]">
-                  {alimentoSelecionado.nome}
-                </p>
-                <span className="text-xs text-[#5DD62C]">
-                  {caloriasEstimadas} kcal ({quantidade || 0}g) • base:{" "}
-                  {alimentoSelecionado.calorias100g} kcal/100g
-                </span>
+              <div className="bg-[#202020] p-3 rounded-xl border border-[#5DD62C] flex flex-col gap-2">
+                <div>
+                  <p className="font-semibold text-[#F8F8F8]">
+                    {alimentoSelecionado.nome}
+                  </p>
+                  <span className="text-xs text-[#5DD62C]">
+                    {caloriasEstimadas} kcal ({quantidade || 0}g) • base:{" "}
+                    {alimentoSelecionado.calorias100g} kcal/100g
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1 pt-2 border-t border-[#303030] text-center text-xs">
+                  <div>
+                    <span className="text-sky-400 font-semibold block">
+                      {macrosEstimados.proteinas}g
+                    </span>
+                    <span className="text-gray-400 text-[10px]">Prot.</span>
+                  </div>
+                  <div>
+                    <span className="text-amber-400 font-semibold block">
+                      {macrosEstimados.carboidratos}g
+                    </span>
+                    <span className="text-gray-400 text-[10px]">Carb.</span>
+                  </div>
+                  <div>
+                    <span className="text-purple-400 font-semibold block">
+                      {macrosEstimados.gorduras}g
+                    </span>
+                    <span className="text-gray-400 text-[10px]">Gord.</span>
+                  </div>
+                  <div>
+                    <span className="text-[#5DD62C] font-semibold block">
+                      {macrosEstimados.fibras}g
+                    </span>
+                    <span className="text-gray-400 text-[10px]">Fibras</span>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -311,10 +382,50 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
               type="number"
               value={calorias}
               onChange={(e) => setCalorias(e.target.value)}
-              placeholder="Calorias"
+              placeholder="Calorias (kcal)"
               required
               className="p-2 bg-[#202020] text-[#F8F8F8] border border-[#202020] focus:border-[#5DD62C] outline-none rounded placeholder-gray-500"
             />
+
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={proteinas}
+                onChange={(e) => setProteinas(e.target.value)}
+                placeholder="Proteínas (g)"
+                className="p-2 bg-[#202020] text-[#F8F8F8] border border-[#202020] focus:border-[#5DD62C] outline-none rounded placeholder-gray-500 text-sm"
+              />
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={carboidratos}
+                onChange={(e) => setCarboidratos(e.target.value)}
+                placeholder="Carboidratos (g)"
+                className="p-2 bg-[#202020] text-[#F8F8F8] border border-[#202020] focus:border-[#5DD62C] outline-none rounded placeholder-gray-500 text-sm"
+              />
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={gorduras}
+                onChange={(e) => setGorduras(e.target.value)}
+                placeholder="Gorduras (g)"
+                className="p-2 bg-[#202020] text-[#F8F8F8] border border-[#202020] focus:border-[#5DD62C] outline-none rounded placeholder-gray-500 text-sm"
+              />
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={fibras}
+                onChange={(e) => setFibras(e.target.value)}
+                placeholder="Fibras (g)"
+                className="p-2 bg-[#202020] text-[#F8F8F8] border border-[#202020] focus:border-[#5DD62C] outline-none rounded placeholder-gray-500 text-sm"
+              />
+            </div>
+
             <select
               value={categoria}
               onChange={(e) => setCategoria(e.target.value)}
