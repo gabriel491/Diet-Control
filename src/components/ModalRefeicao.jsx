@@ -1,6 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, Flame } from "lucide-react";
-import alimentosTaco from "../data/taco.json";
+
+let cacheAlimentos = null;
+let promessaAlimentos = null;
+
+const carregarBaseAlimentos = () => {
+  if (cacheAlimentos) return Promise.resolve(cacheAlimentos);
+  if (!promessaAlimentos) {
+    promessaAlimentos = fetch(`${import.meta.env.BASE_URL}data/alimentos.json`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Erro ao carregar alimentos.json");
+        return res.json();
+      })
+      .then((dados) => {
+        cacheAlimentos = dados;
+        return dados;
+      })
+      .catch(() => {
+        promessaAlimentos = null;
+        return [];
+      });
+  }
+  return promessaAlimentos;
+};
 
 const opcoesPeso = [50, 100, 150, 200];
 
@@ -34,6 +56,17 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
   const [resultadosBusca, setResultadosBusca] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [erroBusca, setErroBusca] = useState("");
+  const [baseAlimentos, setBaseAlimentos] = useState(cacheAlimentos || []);
+
+  useEffect(() => {
+    let ativo = true;
+    carregarBaseAlimentos().then((dados) => {
+      if (ativo) setBaseAlimentos(dados);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const caloriasEstimadas = alimentoSelecionado
     ? Math.round((alimentoSelecionado.calorias100g * quantidade) / 100)
@@ -57,7 +90,7 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
       }
     : { proteinas: 0, carboidratos: 0, gorduras: 0, fibras: 0 };
 
-  // --- BUSCA HÍBRIDA (TACO + OPEN FOOD FACTS) ---
+  // --- BUSCA HÍBRIDA (BASE UNIFICADA + OPEN FOOD FACTS) ---
   const buscarAlimentos = async () => {
     const termoLimpo = termoBusca.trim();
     if (termoLimpo === "") {
@@ -66,26 +99,40 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
 
     setErroBusca("");
 
-    // 1. Consulta primeiro na tabela local (TACO)
-    const palavrasBusca = normalizarTexto(termoLimpo).split(/\s+/);
-    const resultadosLocais = alimentosTaco
+    // Garante que a base local terminou de carregar antes de filtrar
+    const baseAtual =
+      baseAlimentos.length > 0 ? baseAlimentos : await carregarBaseAlimentos();
+
+    // 1. Consulta na base local unificada (TACO + TBCA + IBGE)
+    const termoNormalizado = normalizarTexto(termoLimpo);
+    const palavrasBusca = termoNormalizado.split(/\s+/);
+
+    const resultadosLocais = baseAtual
       .filter((alimento) => {
         const nomeNormalizado = normalizarTexto(alimento.nome);
         return palavrasBusca.every((palavra) =>
           nomeNormalizado.includes(palavra),
         );
       })
-      .slice(0, 15);
+      .sort((a, b) => {
+        const nomeA = normalizarTexto(a.nome);
+        const nomeB = normalizarTexto(b.nome);
+        const aComeca = nomeA.startsWith(termoNormalizado) ? 0 : 1;
+        const bComeca = nomeB.startsWith(termoNormalizado) ? 0 : 1;
+        if (aComeca !== bComeca) return aComeca - bComeca;
+        return nomeA.length - nomeB.length;
+      })
+      .slice(0, 20);
 
     if (resultadosLocais.length > 0) {
       setResultadosBusca(resultadosLocais);
       return;
     }
 
-    // 2. Fallback: busca na API Open Food Facts
-    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
+    // 2. Fallback: busca na API Open Food Facts (BR)
+    const url = `https://br.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
       termoLimpo,
-    )}&search_simple=1&action=process&json=1&page_size=10&fields=code,product_name,nutriments`;
+    )}&search_simple=1&action=process&json=1&page_size=15&lc=pt&countries_tags_en=brazil&fields=code,product_name,brands,nutriments`;
 
     setCarregando(true);
 
@@ -100,15 +147,21 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
             produto.product_name &&
             produto.nutriments?.["energy-kcal_100g"] > 0,
         )
-        .map((produto, index) => ({
-          id: produto.code || `api-${index}`,
-          nome: produto.product_name,
-          calorias100g: Math.round(produto.nutriments["energy-kcal_100g"]),
-          proteina100g: Number(produto.nutriments.proteins_100g || 0),
-          carboidrato100g: Number(produto.nutriments.carbohydrates_100g || 0),
-          gordura100g: Number(produto.nutriments.fat_100g || 0),
-          fibra100g: Number(produto.nutriments.fiber_100g || 0),
-        }));
+        .map((produto, index) => {
+          const marcaPrincipal = produto.brands?.split(",")[0]?.trim();
+          return {
+            id: produto.code || `api-${index}`,
+            fonte: "API",
+            nome: marcaPrincipal
+              ? `${produto.product_name} (${marcaPrincipal})`
+              : produto.product_name,
+            calorias100g: Math.round(produto.nutriments["energy-kcal_100g"]),
+            proteina100g: Number(produto.nutriments.proteins_100g || 0),
+            carboidrato100g: Number(produto.nutriments.carbohydrates_100g || 0),
+            gordura100g: Number(produto.nutriments.fat_100g || 0),
+            fibra100g: Number(produto.nutriments.fiber_100g || 0),
+          };
+        });
 
       if (resultadosApi.length === 0) {
         setErroBusca("Nenhum alimento com calorias foi encontrado.");
@@ -235,7 +288,7 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
             )}
 
             {resultadosBusca.length > 0 && (
-              <div className="flex flex-col gap-2 max-h-40 overflow-y-auto">
+              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
                 {resultadosBusca.map((produto) => {
                   const caloriasProporcionais = Math.round(
                     (produto.calorias100g * quantidade) / 100,
@@ -248,6 +301,7 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
                       onClick={() => {
                         setAlimentoSelecionado({
                           nome: produto.nome,
+                          fonte: produto.fonte,
                           calorias100g: produto.calorias100g,
                           proteina100g: produto.proteina100g || 0,
                           carboidrato100g: produto.carboidrato100g || 0,
@@ -256,13 +310,20 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
                         });
                         setResultadosBusca([]);
                       }}
-                      className="flex justify-between items-center p-2.5 bg-[#202020] hover:bg-[#337418] text-white rounded-lg text-left text-sm cursor-pointer transition-colors"
+                      className="flex justify-between items-center gap-2 p-2.5 bg-[#202020] hover:bg-[#337418] text-white rounded-lg text-left text-sm cursor-pointer transition-colors"
                     >
-                      <span className="truncate pr-2 text-white">
-                        {produto.nome || "Sem nome"}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="truncate text-white">
+                          {produto.nome || "Sem nome"}
+                        </span>
+                        {produto.fonte && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#141414] text-gray-400 border border-[#303030] shrink-0">
+                            {produto.fonte}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[#5DD62C] font-semibold shrink-0">
-                        {caloriasProporcionais} kcal ({quantidade || 0}g)
+                        {caloriasProporcionais} kcal
                       </span>
                     </button>
                   );
@@ -279,6 +340,9 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
                   <span className="text-xs text-[#5DD62C]">
                     {caloriasEstimadas} kcal ({quantidade || 0}g) • base:{" "}
                     {alimentoSelecionado.calorias100g} kcal/100g
+                    {alimentoSelecionado.fonte
+                      ? ` • ${alimentoSelecionado.fonte}`
+                      : ""}
                   </span>
                 </div>
 
@@ -314,8 +378,9 @@ function ModalRefeicao({ onClose, onSalvarRefeicao, categoriaSelecionada }) {
             <label className="text-sm text-gray-400">Quantidade (g)</label>
             <input
               type="number"
+              min={1}
+              step={1}
               value={quantidade}
-              step={50}
               onChange={(e) => setQuantidade(Number(e.target.value))}
               className="w-full p-3 bg-[#202020] text-[#F8F8F8] rounded-xl border border-transparent focus:border-[#5DD62C] outline-none"
             />

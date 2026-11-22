@@ -23,7 +23,7 @@ function App() {
     return metaSalva ? Number(metaSalva) : null;
   });
 
-  const dataHoje = new Date().toISOString().split("T")[0];
+  const dataHoje = new Date().toLocaleDateString("en-CA");
   const [dataSelecionada, setDataSelecionada] = useState(dataHoje);
 
   // --- LÓGICA DE FILTRAGEM ---
@@ -105,7 +105,17 @@ function App() {
               setSelectCard={setSelectCard}
             />
 
-            {/* Lista e Botão */}
+            {selectCard !== null && (
+              <button
+                type="button"
+                onClick={() => setModal(true)}
+                className="bg-[#5DD62C] text-[#0F0F0F] font-bold py-2.5 px-4 rounded-xl hover:bg-[#337418] hover:text-[#F8F8F8] transition-colors w-full cursor-pointer mb-4"
+              >
+                + Adicionar em {nomesCategoria[selectCard]}
+              </button>
+            )}
+
+            {/* Lista de Refeições */}
             <ListaVazia
               refeicoesDoDia={
                 selectCard === null ? refeicoesDoDia : refeicoesSelecionadas
@@ -114,14 +124,6 @@ function App() {
               coresCategoria={coresCategoria}
               nomesCategoria={nomesCategoria}
             />
-            {selectCard !== null && (
-              <button
-                onClick={() => setModal(true)}
-                className="bg-[#5DD62C] text-[#0F0F0F] font-bold p-2 rounded hover:bg-[#337418] hover:text-[#F8F8F8] transition-colors mt-4 w-full cursor-pointer"
-              >
-                + Adicionar Refeição
-              </button>
-            )}
           </main>
         </div>
       </div>
