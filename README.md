@@ -1,37 +1,37 @@
 # 🍃 Diet Control
 
-Aplicação web responsiva para acompanhamento diário de alimentação, controle de calorias e visualização de macronutrientes, com consulta rápida à **Tabela TACO** e busca complementar via **Open Food Facts**.
-
-🔗 **[Acessar na Vercel (Principal)](https://diet-control-theta.vercel.app/)** • **[Acessar no GitHub Pages](https://gabriel491.github.io/Diet-Control/)**
+Aplicação web progressiva (**PWA**) para controle diário de alimentação, calorias e macronutrientes, com busca instantânea na **Tabela TACO** e fallback automático via **Open Food Facts**.
 
 ![Preview do Diet Control](./public/diet-control-og.jpg)
+
+🔗 **Acesse em produção:** [diet-control-theta.vercel.app](https://diet-control-theta.vercel.app/)  
+🌐 **Espelho GitHub Pages:** [gabriel491.github.io/Diet-Control](https://gabriel491.github.io/Diet-Control/)
 
 ---
 
 ## ✨ Funcionalidades
 
-- **🎯 Meta Diária de Calorias:** definição e edição da meta diária com anel de progresso circular (SVG), barra percentual e contador dinâmico de calorias restantes (ou excedidas).
-- **🥗 Resumo de Macronutrientes:** cálculo automático diário de **Proteínas**, **Carboidratos**, **Gorduras** e **Fibras** em gramas e percentual aproximado sobre as calorias consumidas.
-- **🔍 Busca Híbrida de Alimentos:**
-  - **Prioridade local (Tabela TACO):** pesquisa instantânea com normalização de acentos e cálculo proporcional por grama.
-  - **Fallback online (Open Food Facts API):** consulta automática na base global quando o alimento não é encontrado na tabela local.
-- **✍️ Cadastro Manual:** permite registrar alimentos personalizados com peso, calorias e macronutrientes opcionais.
-- **⚡ Porções Rápidas:** atalhos de `50g`, `100g`, `150g` e `200g` com prévia de calorias e macros em tempo real.
-- **🍽️ Organização por Refeições:** cards interativos para **Café da Manhã**, **Almoço**, **Lanche** e **Jantar**, com filtro por categoria e remoção de itens.
-- **📅 Histórico por Data:** seletor de datas para registrar e consultar refeições de dias anteriores.
-- **💾 Persistência Local:** todas as refeições e a meta diária ficam salvas automaticamente no `localStorage` do navegador.
-- **📱 Interface Mobile-First:** tema escuro focado em legibilidade e uso confortável em dispositivos móveis.
+- **Painel de Meta Diária:** anel de progresso circular em SVG, barra de porcentagem, contador de calorias restantes (ou excedentes) e modal dedicado para definir ou editar a meta a qualquer momento.
+- **Cálculo de Macronutrientes:** soma automática de **Proteínas, Carboidratos, Gorduras e Fibras** do dia, exibindo gramas totais e percentual aproximado sobre o consumo calórico.
+- **Busca Híbrida de Alimentos:**
+  1. Consulta instantânea e offline na **Tabela TACO** local (com normalização de acentos e busca por múltiplas palavras).
+  2. Fallback automático na API pública do **Open Food Facts** caso o alimento não conste na base local.
+- **Cálculo Proporcional por Grama:** atalhos rápidos (`50g`, `100g`, `150g`, `200g`) ou peso personalizado com recalculo em tempo real de calorias e macros.
+- **Cadastro Manual:** registro direto de alimentos customizados com peso, calorias e macronutrientes opcionais.
+- **Organização por Data e Refeição:** seletor de datas e filtro por categorias (**Café da Manhã**, **Almoço**, **Lanche** e **Jantar**).
+- **Instalável no Celular (PWA):** suporte a instalação na tela inicial (Android e iOS) com funcionamento offline via Service Worker.
+- **Persistência Local:** histórico de refeições e meta diária salvos automaticamente no `localStorage`.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **[React](https://react.dev/)** — construção da interface baseada em componentes e gerenciamento de estado
-- **[Vite](https://vite.dev/)** — bundler e ambiente de desenvolvimento
-- **[Tailwind CSS](https://tailwindcss.com/)** — estilização utilitária e responsividade
+- **[React](https://react.dev/)** — construção da interface e gerenciamento de estado
+- **[Vite](https://vitejs.dev/)** — bundler e ambiente de desenvolvimento
+- **[Tailwind CSS](https://tailwindcss.com/)** — estilização responsiva *mobile-first* em tema escuro
 - **[Lucide React](https://lucide.dev/)** — biblioteca de ícones
-- **Tabela TACO (JSON local)** — base nutricional brasileira (por 100g)
-- **[Open Food Facts API](https://world.openfoodfacts.org/)** — API pública utilizada como fallback de busca
+- **[vite-plugin-pwa](https://vite-pwa-org.netlify.app/)** — manifesto, Service Worker e cache offline
+- **Tabela TACO (JSON local)** + **[Open Food Facts API](https://world.openfoodfacts.org/)** — dados nutricionais
 
 ---
 
@@ -40,89 +40,74 @@ Aplicação web responsiva para acompanhamento diário de alimentação, control
 ```text
 Diet-Control/
 ├── public/
-│   ├── diet-control-og.jpg      # Imagem de preview (Open Graph / Twitter Card)
-│   ├── favicon.svg              # Ícone vetorial da aplicação
-│   └── ...                      # Favicons e manifesto web
+│   ├── diet-control-og.jpg       # Imagem de preview Open Graph (1200x630)
+│   ├── favicon.svg               # Ícone vetorial da aplicação
+│   └── ...                       # Ícones PWA e favicons
 ├── src/
 │   ├── components/
-│   │   ├── CardsCategorias.jsx  # Cards de Café da Manhã, Almoço, Lanche e Jantar
-│   │   ├── Header.jsx           # Cabeçalho com marca Diet Control
-│   │   ├── ListaVazia.jsx       # Listagem de alimentos registrados e estado vazio
-│   │   ├── ModalMeta.jsx        # Modal para definir/editar a meta calórica diária
-│   │   ├── ModalRefeicao.jsx    # Modal de busca híbrida e cadastro manual
-│   │   ├── ResumoDiario.jsx     # Anel de calorias, barra de progresso e card de macros
-│   │   └── SeletorData.jsx      # Navegação e seleção de datas
+│   │   ├── CardsCategorias.jsx   # Cards de Café da Manhã, Almoço, Lanche e Jantar
+│   │   ├── Header.jsx            # Cabeçalho com identidade visual
+│   │   ├── ListaVazia.jsx        # Listagem de alimentos registrados e estado vazio
+│   │   ├── ModalMeta.jsx         # Modal para definir e editar a meta calórica
+│   │   ├── ModalRefeicao.jsx     # Modal com busca híbrida e cadastro manual
+│   │   ├── ResumoDiario.jsx      # Anel de calorias, barra de meta e cards de macros
+│   │   └── SeletorData.jsx       # Navegação entre dias registrados
 │   ├── constants/
-│   │   └── categorias.jsx       # Nomes, cores e ícones das categorias de refeição
+│   │   └── categorias.js         # Metadados, nomes, cores e ícones das categorias
 │   ├── data/
-│   │   └── taco.json            # Dados nutricionais da Tabela TACO
-│   ├── App.jsx                  # Estado global, filtros e composição da tela
-│   └── main.jsx                 # Ponto de entrada da aplicação
-├── index.html                   # Metatags de SEO, Open Graph e fontes
-└── vite.config.js               # Configuração do Vite com detecção Vercel / GitHub Pages
+│   │   └── taco.json             # Base nutricional local (Tabela TACO)
+│   ├── App.jsx                   # Estado principal e composição da tela
+│   └── main.jsx                  # Ponto de entrada React
+├── index.html                    # Metatags de SEO, Open Graph e Twitter Card
+└── vite.config.js                # Configuração do Vite, PWA e base path multi-host
 ```
 
 ---
 
 ## 🚀 Como Executar Localmente
 
-### Pré-requisitos
-- [Node.js](https://nodejs.org/) (v18 ou superior)
-- `npm`
+Pré-requisito: [Node.js](https://nodejs.org/) (v18 ou superior).
 
-### Passos
+```bash
+# 1. Clone o repositório
+git clone [https://github.com/gabriel491/Diet-Control.git](https://github.com/gabriel491/Diet-Control.git)
 
-1. Clone o repositório:
-   ```bash
-   git clone [https://github.com/gabriel491/Diet-Control.git](https://github.com/gabriel491/Diet-Control.git)
-   ```
+# 2. Acesse a pasta do projeto
+cd Diet-Control
 
-2. Acesse a pasta do projeto:
-   ```bash
-   cd Diet-Control
-   ```
+# 3. Instale as dependências
+npm install
 
-3. Instale as dependências:
-   ```bash
-   npm install
-   ```
-
-4. Inicie o servidor de desenvolvimento:
-   ```bash
-   npm run dev
-   ```
-
-5. Para gerar a versão de produção:
-   ```bash
-   npm run build
-   ```
+# 4. Inicie o servidor de desenvolvimento
+npm run dev
+```
 
 ---
 
-## 🌐 Deploy (Vercel + GitHub Pages)
+## 📦 Build e Deploy
 
-O arquivo `vite.config.js` detecta automaticamente o ambiente de build pela variável `process.env.VERCEL`, ajustando o `base` para `"/"` na Vercel e `"/Diet-Control/"` no GitHub Pages:
+O `vite.config.js` identifica automaticamente o ambiente de build via `process.env.VERCEL`, permitindo manter **Vercel** (`base: "/"`) e **GitHub Pages** (`base: "/Diet-Control/"`) sincronizados a partir do mesmo código.
 
-- **Vercel (Produção):** deploy automático a cada push na branch `main`:
-  ```bash
-  git push origin main
-  ```
-- **GitHub Pages:** publicação manual na branch `gh-pages`:
-  ```bash
-  npm run deploy
-  ```
+```bash
+# Gerar build de produção local
+npm run build
+
+# Publicar na Vercel (deploy automático pela branch main)
+git push origin main
+
+# Publicar no GitHub Pages
+npm run deploy
+```
 
 ---
 
-## 🗺️ Próximos Passos
+## 📱 Instalação como App (PWA)
 
-- [ ] Exibir o detalhamento de macronutrientes em cada item da lista de refeições
-- [ ] Adicionar edição de alimentos já registrados
-- [ ] Transformar em PWA instalável com suporte offline completo (`vite-plugin-pwa`)
-- [ ] Permitir exportar e importar histórico em JSON
+- **Android (Chrome):** acesse o link em produção, toque no menu `⋮` e selecione **Instalar aplicativo**.
+- **iOS (Safari):** acesse o link, toque em **Compartilhar** e selecione **Adicionar à Tela de Início**.
 
 ---
 
 ## 👨‍💻 Autor
 
-Desenvolvido por **[Gabriel Macêdo](https://github.com/gabriel491)**.
+Desenvolvido por **Gabriel Macêdo** — [@gabriel491](https://github.com/gabriel491)
