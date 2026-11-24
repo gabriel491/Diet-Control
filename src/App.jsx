@@ -28,7 +28,7 @@ function App() {
 
   // --- LÓGICA DE FILTRAGEM ---
   const refeicoesDoDia = refeicoes.filter(
-    (refeicao) => refeicao.data == dataSelecionada,
+    (refeicao) => refeicao.data === dataSelecionada,
   );
 
   const refeicoesSelecionadas = refeicoesDoDia.filter(
@@ -70,7 +70,7 @@ function App() {
   };
 
   const deletarRefeicao = (id) => {
-    const listaAtualizada = refeicoes.filter((refeicao) => refeicao.id != id);
+    const listaAtualizada = refeicoes.filter((refeicao) => refeicao.id !== id);
     setRefeicoes(listaAtualizada);
     localStorage.setItem("refeicoes", JSON.stringify(listaAtualizada));
   };
